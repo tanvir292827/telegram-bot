@@ -111,12 +111,7 @@ Date of Birth: {dob}
             )
             await context.bot.send_message(
                 chat_id=GROUP_CHAT_ID,
-                text=f"📤 Withdraw Request:
-👤 {user_name}
-🆔 ID: {user_id}
-💳 Method: {method}
-📱 Number: {text}
-💰 Amount: {balance} টাকা"
+                text = f"📤 Withdraw Request:\n👤 {user_name}\n🆔 ID: {user_id}\n💳 Method: {method}\n📱 Number: {text}\n💰 Amount: {balance} টাকা"
             )
             user_balances[user_id] = 0
             save_balances()
