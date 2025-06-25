@@ -18,7 +18,7 @@ from telegram.ext import (
 )
 
 TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN'
-GROUP_CHAT_ID = -1001234567890  # Replace with your group ID
+GROUP_CHAT_ID = -1001234567890
 BALANCE_FILE = 'user_balances.json'
 
 if os.path.exists(BALANCE_FILE):
@@ -76,22 +76,14 @@ async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE
             [InlineKeyboardButton("📋 Copy Email", callback_data=f"copy_email:{local_part}")],
             [InlineKeyboardButton("📋 Copy Password", callback_data=f"copy_password:{pwd}")]
         ])
-        message = (
-            f"First Name: `{first}`
-"
-            f"Last Name: ✖️
-"
-            f"Email: `{email}`
-"
-            f"Password: `{pwd}`
-"
-            f"Gender: {gender}
-"
-            f"Date of Birth: {dob}
+        message = f"""First Name: `{first}`
+Last Name: ✖️
+Email: `{email}`
+Password: `{pwd}`
+Gender: {gender}
+Date of Birth: {dob}
 
-"
-            "একাউন্ট টি খুলা হয়ে গেলে লগ আউট করে দিন,ধন্যবাদ😊"
-        )
+একাউন্ট টি খুলা হয়ে গেলে লগ আউট করে দিন,ধন্যবাদ😊"""
         await update.message.reply_text(message, parse_mode="Markdown", reply_markup=keyboard)
 
     elif text == "💰 Balance":
