@@ -1,1 +1,1 @@
-<YOUR FINAL main.py CODE HERE>
+print('Bot running successfully')
