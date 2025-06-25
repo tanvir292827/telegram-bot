@@ -1,7 +1,7 @@
+
 import json
 import os
 import re
-import random
 from telegram import (
     Update,
     ReplyKeyboardMarkup,
@@ -41,7 +41,8 @@ def main_menu():
             ["📩 Get a Gmail", "💰 Balance"],
             ["🏧 Withdraw"]
         ],
-        resize_keyboard=True
+        resize_keyboard=True,
+        one_time_keyboard=False
     )
 
 def payment_options():
@@ -66,9 +67,7 @@ async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE
     if text == "📩 Get a Gmail":
         sent = await context.bot.send_message(
             chat_id=GROUP_CHAT_ID,
-            text=f"📨 Gmail request from:
-👤 {user_name}
-🆔 User ID: {user_id}"
+            text=f"📨 Gmail request from:\n👤 {user_name}\n🆔 User ID: {user_id}"
         )
         reply_map[sent.message_id] = user_id
         await update.message.reply_text("📥 অনুগ্রহ করে অপেক্ষা করুন, অ্যাডমিন ম্যানুয়ালি Gmail পাঠাবেন...")
@@ -98,12 +97,14 @@ async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE
             )
             await context.bot.send_message(
                 chat_id=GROUP_CHAT_ID,
-                text=f"📤 Withdraw Request:
-👤 {user_name}
-🆔 ID: {user_id}
-💳 Method: {method}
-📱 Number: {text}
-💰 Amount: {balance} টাকা"
+                text=(
+                    f"📤 Withdraw Request:\n"
+                    f"👤 {user_name}\n"
+                    f"🆔 ID: {user_id}\n"
+                    f"💳 Method: {method}\n"
+                    f"📱 Number: {text}\n"
+                    f"💰 Amount: {balance} টাকা"
+                )
             )
             user_balances[user_id] = 0
             save_balances()
@@ -146,16 +147,17 @@ async def handle_done_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         save_balances()
 
         await query.edit_message_text(
-            text="✅ ধন্যবাদ! আপনার ব্যালেন্সে ১৫ টাকা যোগ হয়েছে।
-⚠️ সতর্কতা: আপনাকে প্রদান করা জিমেইলটি সঠিকভাবে *রেজিষ্ট্রেশন* এবং *লগআউট* না করা হলে, ব্যালেন্স *কেটে নেওয়া* হবে।",
+            text="✅ ধন্যবাদ! আপনার ব্যালেন্সে ১৫ টাকা যোগ হয়েছে।\n⚠️ সতর্কতা: আপনাকে প্রদান করা জিমেইলটি সঠিকভাবে *রেজিষ্ট্রেশন* এবং *লগআউট* না করা হলে, ব্যালেন্স *কেটে নেওয়া* হবে।",
             parse_mode="Markdown"
         )
 
         user_name = query.from_user.full_name
-        notify_text = f"✅ Gmail completed by:
-👤 {user_name}
-🆔 User ID: {user_id}
-💳 Current Balance: {user_balances[user_id]} টাকা"
+        notify_text = (
+            f"✅ Gmail completed by:\n"
+            f"👤 {user_name}\n"
+            f"🆔 User ID: {user_id}\n"
+            f"💳 Current Balance: {user_balances[user_id]} টাকা"
+        )
 
         if admin_msg_id:
             await context.bot.send_message(chat_id=GROUP_CHAT_ID, text=notify_text, reply_to_message_id=admin_msg_id)
