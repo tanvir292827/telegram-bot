@@ -1,32 +1,41 @@
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
-# ✅ Bot Token
+from flask import Flask
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
+
 TOKEN = '8149532850:AAG4fPQ_L0Imbv2NkA5lQI4SyP-52mpvyLY'
 
-# ✅ Sleep Message
+app = Flask(__name__)
+
+# Telegram Bot Message
 SLEEP_MESSAGE = (
-    "⏳ দুঃখিত, বর্তমানে কাজটি বন্ধ রয়েছে।\n\n"
-    "🕕 কাজের সময়: সন্ধ্যা ৬ টা থেকে রাত ১০ টা পর্যন্ত।\n\n"
-    "🙏 অনুগ্রহ করে নির্ধারিত সময়ের মধ্যে মেসেজ করুন।\n\n"
-    "ধন্যবাদ 😊"
+    "⏳ দুঃখিত, বর্তমানে কাজটি বন্ধ রয়েছে।
+
+"
+    "🕕 সন্ধ্যা ৬টা থেকে রাত ১০টা পর্যন্ত এই বটে কাজ করা হয়।
+
+"
+    "ধন্যবাদ😊"
 )
 
-# ✅ /start Command
+# /start command
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(SLEEP_MESSAGE)
 
-# ✅ Auto reply to any message
-async def auto_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# All messages
+async def all_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(SLEEP_MESSAGE)
 
-# ✅ Main function
-def main():
-    app = ApplicationBuilder().token(TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, auto_reply))
-    print("🤖 Bot is running in SLEEP MODE...")
-    app.run_polling()
+def run_bot():
+    app_bot = ApplicationBuilder().token(TOKEN).build()
+    app_bot.add_handler(CommandHandler("start", start))
+    app_bot.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, all_messages))
+    print("🤖 Bot is running...")
+    app_bot.run_polling()
+
+@app.route('/')
+def home():
+    return "Bot is alive!"
 
 if __name__ == '__main__':
-    main()
+    run_bot()
