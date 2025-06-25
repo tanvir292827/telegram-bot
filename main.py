@@ -17,8 +17,8 @@ from telegram.ext import (
     filters
 )
 
-TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN'
-GROUP_CHAT_ID = -1001234567890
+TOKEN = '8149532850:AAG4fPQ_L0Imbv2NkA5lQI4SyP-52mpvyLY'
+GROUP_CHAT_ID = -4786953733
 BALANCE_FILE = 'user_balances.json'
 
 if os.path.exists(BALANCE_FILE):
