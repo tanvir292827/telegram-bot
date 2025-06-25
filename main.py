@@ -1,23 +1,12 @@
 import json
 import os
 import re
-from telegram import (
-    Update,
-    ReplyKeyboardMarkup,
-    InlineKeyboardMarkup,
-    InlineKeyboardButton
-)
-from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    MessageHandler,
-    CallbackQueryHandler,
-    ContextTypes,
-    filters
-)
+import asyncio
+from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes, filters
 
-TOKEN = '8149532850:AAG4fPQ_L0Imbv2NkA5lQI4SyP-52mpvyLY'
-GROUP_CHAT_ID = -4786953733
+TOKEN = 'PASTE_YOUR_BOT_TOKEN_HERE'
+GROUP_CHAT_ID = -1001234567890  # Replace with your private group ID
 BALANCE_FILE = 'user_balances.json'
 
 if os.path.exists(BALANCE_FILE):
@@ -29,7 +18,6 @@ else:
 
 reply_map = {}
 user_withdraw_state = {}
-gmail_data_map = {}
 
 def save_balances():
     with open(BALANCE_FILE, 'w') as f:
@@ -37,10 +25,7 @@ def save_balances():
 
 def main_menu():
     return ReplyKeyboardMarkup(
-        [
-            ["📩 Get a Gmail", "💰 Balance"],
-            ["🏧 Withdraw"]
-        ],
+        [["📩 Get a Gmail", "💰 Balance"], ["🏧 Withdraw"]],
         resize_keyboard=True,
         one_time_keyboard=False
     )
@@ -110,25 +95,71 @@ async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE
             save_balances()
             del user_withdraw_state[user_id]
 
-async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle_admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.reply_to_message:
+        original_msg_id = update.message.reply_to_message.message_id
+        user_info = reply_map.get(original_msg_id)
+        if user_info:
+            user_id = user_info if isinstance(user_info, int) else user_info["user_id"]
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton("✅ Done", callback_data=f"done:{user_id}:{update.message.message_id}")]
+            ])
+            await context.bot.send_message(
+                chat_id=user_id,
+                text=update.message.text,
+                reply_markup=keyboard
+            )
+            reply_map[original_msg_id] = {
+                "user_id": user_id,
+                "admin_msg_id": update.message.message_id
+            }
+
+async def handle_done_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     data = query.data
 
-    if data.startswith("copy_"):
-        field, user_id = data.split(":")
-        user_id = int(user_id)
-        info = gmail_data_map.get(user_id, {})
-        key = field.replace("copy_", "")
-        value = info.get(key)
-        if value:
-            await query.message.reply_text(value)
+    if data.startswith("done:"):
+        parts = data.split(":")
+        user_id = int(parts[1])
+        admin_msg_id = int(parts[2]) if len(parts) > 2 else None
+
+        if query.from_user.id != user_id:
+            await query.edit_message_text("❌ আপনি এই বাটন ব্যবহার করতে পারবেন না।")
+            return
+
+        user_balances[user_id] = user_balances.get(user_id, 0) + 15
+        save_balances()
+
+        await query.edit_message_text(
+            text="✅ ধন্যবাদ! আপনার ব্যালেন্সে ১৫ টাকা যোগ হয়েছে।
+⚠️ সতর্কতা: আপনাকে প্রদান করা জিমেইলটি সঠিকভাবে *রেজিষ্ট্রেশন* এবং *লগআউট* না করা হলে, ব্যালেন্স *কেটে নেওয়া* হবে।",
+            parse_mode="Markdown"
+        )
+
+        user_name = query.from_user.full_name
+        notify_text = f"✅ Gmail completed by:
+👤 {user_name}
+🆔 User ID: {user_id}
+💳 Current Balance: {user_balances[user_id]} টাকা"
+
+        if admin_msg_id:
+            await context.bot.send_message(chat_id=GROUP_CHAT_ID, text=notify_text, reply_to_message_id=admin_msg_id)
+        else:
+            await context.bot.send_message(chat_id=GROUP_CHAT_ID, text=notify_text)
+
+        if user_balances[user_id] == 225:
+            await context.bot.send_message(
+                chat_id=user_id,
+                text="🎉 অভিনন্দন! আপনি এখন Withdraw করার জন্য ইলিজিবল💸"
+            )
 
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & filters.ChatType.PRIVATE, handle_user_message))
-    app.add_handler(CallbackQueryHandler(handle_callback))
+    app.add_handler(MessageHandler(filters.TEXT & filters.ChatType.GROUPS, handle_admin_reply))
+    app.add_handler(CallbackQueryHandler(handle_done_callback))
     print("🤖 Bot is running...")
     app.run_polling()
 
