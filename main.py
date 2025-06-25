@@ -1,27 +1,26 @@
+
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, MessageHandler, filters
 
 # ✅ Bot Token
-TOKEN = '7790464127:AAF8WvwEVrx1gpP26AIwZuQ72HgQnobjJSw'
+TOKEN = '8149532850:AAG4fPQ_L0Imbv2NkA5lQI4SyP-52mpvyLY'
 
-# ✅ Sleep Message (Always shown)
+# ✅ Sleep Message (Always)
 SLEEP_MESSAGE = (
-    "⏳ দুঃখিত, বর্তমানে কাজটি বন্ধ রয়েছে।\n\n"
-    "🕕 এই বটে কাজ করা হয় সন্ধ্যা ৬ টা থেকে রাত ১০ টা পর্যন্ত।\n\n"
-    "অনুগ্রহ করে নির্ধারিত সময়ের মধ্যে মেসেজ করুন।\n\n"
+    "⏳ দুঃখিত, বর্তমানে কাজটি বন্ধ রয়েছে।\n\n"
+    "🕕 প্রতিদিন সন্ধ্যা ৬ টা থেকে রাত ১০ টা পর্যন্ত এই বটে কাজ করা হয়।\n\n"
     "ধন্যবাদ 😊"
 )
 
-# ✅ Respond to any message
-async def auto_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# ✅ Message Handler (any text)
+async def sleep_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(SLEEP_MESSAGE)
 
-# ✅ Main Function
+# ✅ Main function
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, auto_reply))  # Reply to all texts
-    app.add_handler(MessageHandler(filters.COMMAND, auto_reply))  # Reply to any command too
-    print("🤖 Sleep Mode Bot is running...")
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, sleep_reply))
+    print("🤖 Sleep-mode bot is running...")
     app.run_polling()
 
 if __name__ == '__main__':
