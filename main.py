@@ -1,12 +1,24 @@
 import json
 import os
 import re
-import asyncio
-from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes, filters
+import random
+from telegram import (
+    Update,
+    ReplyKeyboardMarkup,
+    InlineKeyboardMarkup,
+    InlineKeyboardButton
+)
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    MessageHandler,
+    CallbackQueryHandler,
+    ContextTypes,
+    filters
+)
 
-TOKEN = 'PASTE_YOUR_BOT_TOKEN_HERE'
-GROUP_CHAT_ID = -1001234567890  # Replace with your private group ID
+TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN'
+GROUP_CHAT_ID = -1001234567890  # Replace with your group ID
 BALANCE_FILE = 'user_balances.json'
 
 if os.path.exists(BALANCE_FILE):
@@ -26,8 +38,7 @@ def save_balances():
 def main_menu():
     return ReplyKeyboardMarkup(
         [["📩 Get a Gmail", "💰 Balance"], ["🏧 Withdraw"]],
-        resize_keyboard=True,
-        one_time_keyboard=False
+        resize_keyboard=True
     )
 
 def payment_options():
@@ -36,6 +47,15 @@ def payment_options():
         resize_keyboard=True,
         one_time_keyboard=True
     )
+
+def generate_gmail_info():
+    first_name = random.choice(["Rafi", "Mehedi", "Tarek", "Shanto"])
+    email_user = ''.join(random.choices("abcdefghijklmnopqrstuvwxyz0123456789", k=10))
+    email = f"{email_user}@gmail.com"
+    password = ''.join(random.choices("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", k=12))
+    dob = f"{random.randint(1997, 2004)}-{random.randint(1,12):02}-{random.randint(1,28):02}"
+    gender = random.choice(["Male", "Female"])
+    return first_name, email_user, email, password, dob, gender
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -50,14 +70,29 @@ async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE
     balance = user_balances.get(user_id, 0)
 
     if text == "📩 Get a Gmail":
-        sent = await context.bot.send_message(
-            chat_id=GROUP_CHAT_ID,
-            text=f"📨 Gmail request from:
-👤 {user_name}
-🆔 User ID: {user_id}"
+        first, local_part, email, pwd, dob, gender = generate_gmail_info()
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("📋 Copy Name", callback_data=f"copy_name:{first}")],
+            [InlineKeyboardButton("📋 Copy Email", callback_data=f"copy_email:{local_part}")],
+            [InlineKeyboardButton("📋 Copy Password", callback_data=f"copy_password:{pwd}")]
+        ])
+        message = (
+            f"First Name: `{first}`
+"
+            f"Last Name: ✖️
+"
+            f"Email: `{email}`
+"
+            f"Password: `{pwd}`
+"
+            f"Gender: {gender}
+"
+            f"Date of Birth: {dob}
+
+"
+            "একাউন্ট টি খুলা হয়ে গেলে লগ আউট করে দিন,ধন্যবাদ😊"
         )
-        reply_map[sent.message_id] = user_id
-        await update.message.reply_text("📥 অনুগ্রহ করে অপেক্ষা করুন, অ্যাডমিন ম্যানুয়ালি Gmail পাঠাবেন...")
+        await update.message.reply_text(message, parse_mode="Markdown", reply_markup=keyboard)
 
     elif text == "💰 Balance":
         await update.message.reply_text(f"💰 আপনার ব্যালেন্স: {balance} টাকা")
@@ -95,71 +130,21 @@ async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE
             save_balances()
             del user_withdraw_state[user_id]
 
-async def handle_admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.reply_to_message:
-        original_msg_id = update.message.reply_to_message.message_id
-        user_info = reply_map.get(original_msg_id)
-        if user_info:
-            user_id = user_info if isinstance(user_info, int) else user_info["user_id"]
-            keyboard = InlineKeyboardMarkup([
-                [InlineKeyboardButton("✅ Done", callback_data=f"done:{user_id}:{update.message.message_id}")]
-            ])
-            await context.bot.send_message(
-                chat_id=user_id,
-                text=update.message.text,
-                reply_markup=keyboard
-            )
-            reply_map[original_msg_id] = {
-                "user_id": user_id,
-                "admin_msg_id": update.message.message_id
-            }
-
-async def handle_done_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle_copy_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     data = query.data
 
-    if data.startswith("done:"):
-        parts = data.split(":")
-        user_id = int(parts[1])
-        admin_msg_id = int(parts[2]) if len(parts) > 2 else None
-
-        if query.from_user.id != user_id:
-            await query.edit_message_text("❌ আপনি এই বাটন ব্যবহার করতে পারবেন না।")
-            return
-
-        user_balances[user_id] = user_balances.get(user_id, 0) + 15
-        save_balances()
-
-        await query.edit_message_text(
-            text="✅ ধন্যবাদ! আপনার ব্যালেন্সে ১৫ টাকা যোগ হয়েছে।
-⚠️ সতর্কতা: আপনাকে প্রদান করা জিমেইলটি সঠিকভাবে *রেজিষ্ট্রেশন* এবং *লগআউট* না করা হলে, ব্যালেন্স *কেটে নেওয়া* হবে।",
-            parse_mode="Markdown"
-        )
-
-        user_name = query.from_user.full_name
-        notify_text = f"✅ Gmail completed by:
-👤 {user_name}
-🆔 User ID: {user_id}
-💳 Current Balance: {user_balances[user_id]} টাকা"
-
-        if admin_msg_id:
-            await context.bot.send_message(chat_id=GROUP_CHAT_ID, text=notify_text, reply_to_message_id=admin_msg_id)
-        else:
-            await context.bot.send_message(chat_id=GROUP_CHAT_ID, text=notify_text)
-
-        if user_balances[user_id] == 225:
-            await context.bot.send_message(
-                chat_id=user_id,
-                text="🎉 অভিনন্দন! আপনি এখন Withdraw করার জন্য ইলিজিবল💸"
-            )
+    if data.startswith("copy_"):
+        _, field = data.split("_", 1)
+        label, value = field.split(":", 1)
+        await query.message.reply_text(f"📋 কপি হয়েছে: `{value}`", parse_mode="Markdown")
 
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & filters.ChatType.PRIVATE, handle_user_message))
-    app.add_handler(MessageHandler(filters.TEXT & filters.ChatType.GROUPS, handle_admin_reply))
-    app.add_handler(CallbackQueryHandler(handle_done_callback))
+    app.add_handler(CallbackQueryHandler(handle_copy_callback, pattern="^copy_"))
     print("🤖 Bot is running...")
     app.run_polling()
 
