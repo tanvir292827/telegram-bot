@@ -1,1 +1,2 @@
-python-3.10.13
+flask
+python-telegram-bot==20.6
